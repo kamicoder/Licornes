@@ -83,7 +83,12 @@ class Licorne {
 
   lireEntrees(duree) {
     if (this.humain && !this.pilote) {
-      for (const cle in this.entrees) this.entrees[cle] = touches[this.commandes[cle]] === true;
+      for (const cle in this.entrees) {
+        const code = this.commandes[cle];
+        this.entrees[cle] = touches[code] === true || (this.joueur === 1 && touchesTactiles[code] === true);
+      }
+      // Au doigt, la licorne galope toute seule : on n'a que deux pouces
+      if (this.joueur === 1 && modeTactile && humains.length === 1) this.entrees.avancer = !this.entrees.reculer;
       return;
     }
     this.penser(duree);

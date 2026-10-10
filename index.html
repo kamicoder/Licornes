@@ -2,14 +2,24 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>La Course des Licornes</title>
+  <meta name="description" content="Un mini jeu de course de licornes sur des routes arc-en-ciel.">
+  <meta name="theme-color" content="#ffc7e6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Licornes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icones/icone-192.png">
+  <link rel="apple-touch-icon" href="icones/icone-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
   <style>
     html, body { margin: 0; min-height: 100%; }
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       box-sizing: border-box;
       padding: 12px 16px;
       display: flex;
@@ -20,15 +30,22 @@
       background: linear-gradient(160deg, #ffe3f3, #e6dcff 50%, #d6efff);
       font-family: Fredoka, Verdana, sans-serif;
       color: #6a4a8c;
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
     canvas {
       display: block;
       width: min(100%, calc((100vh - 110px) * 1.6));
+      width: min(100%, calc((100dvh - 110px) * 1.6));
       height: auto;
       aspect-ratio: 960 / 600;
       border-radius: 20px;
       box-shadow: 0 12px 40px rgba(150, 90, 200, 0.35);
       background: #fdf6ff;
+      touch-action: none;
     }
     .aide { margin: 0; font-size: 15px; text-align: center; line-height: 1.5; }
     kbd {
@@ -38,6 +55,39 @@
       padding: 0 6px;
       box-shadow: 0 2px 0 #d4bfe8;
     }
+
+    /* Téléphones et tablettes, ou petites fenêtres : la toile prend toute la place */
+    @media (pointer: coarse), (max-height: 560px) {
+      body { padding: 0; gap: 0; background: #f3e6ff; }
+      .aide { display: none; }
+      canvas {
+        width: min(100vw, 100vh * 1.6);
+        width: min(100vw, 100dvh * 1.6);
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+
+    #tourne {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 24px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(160deg, #ffe3f3, #e6dcff 50%, #d6efff);
+    }
+    #tourne .dessin { font-size: 64px; animation: tourne 2s ease-in-out infinite; }
+    @keyframes tourne { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(90deg); } }
+    @media (orientation: portrait) and (pointer: coarse) {
+      #tourne { display: flex; }
+    }
   </style>
 </head>
 <body>
@@ -45,8 +95,12 @@
   <p class="aide">
     Joueur 1 : <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>, turbo <kbd>Entrée</kbd> (ou <kbd>Espace</kbd> en solo)
     · Joueur 2 : <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd>, turbo <kbd>Espace</kbd>
-    <br><kbd>P</kbd> pause · <kbd>M</kbd> son et musique · <kbd>Échap</kbd> menu
+    <br><kbd>P</kbd> pause · <kbd>M</kbd> son et musique · <kbd>Échap</kbd> menu · on peut aussi cliquer
   </p>
+  <div id="tourne">
+    <div class="dessin">📱</div>
+    <div>Tourne ton téléphone pour galoper 🦄🌈</div>
+  </div>
   <script src="js/outils.js"></script>
   <script src="js/donnees.js"></script>
   <script src="js/sons.js"></script>
@@ -54,6 +108,7 @@
   <script src="js/dessins.js"></script>
   <script src="js/licorne.js"></script>
   <script src="js/course.js"></script>
+  <script src="js/tactile.js"></script>
   <script src="js/affichage-course.js"></script>
   <script src="js/ecrans.js"></script>
   <script src="js/principal.js"></script>

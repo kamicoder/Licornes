@@ -21,12 +21,14 @@ function dessinerCourse() {
     ecrire(String(n), L / 2, H / 2, Math.round(130 * gonfle), ARC_EN_CIEL[(n * 2) % ARC_EN_CIEL.length]);
   }
   dessinerMessages();
+  if (etat !== "resultats") dessinerCommandesTactiles();
   if (etat === "resultats") dessinerResultats();
   if (pause) {
     pinceau.fillStyle = "rgba(255, 255, 255, 0.6)";
     pinceau.fillRect(0, 0, L, H);
-    ecrire("Pause", L / 2, H / 2 - 20, 70, "#b07cff", true);
-    ecrire("P : reprendre   ·   Échap : menu", L / 2, H / 2 + 45, 20, "#6a4a8c");
+    ecrire("Pause", L / 2, H / 2 - 50, 70, "#b07cff", true);
+    bouton(L / 2 - 200, H / 2 + 10, 190, 50, "Reprendre" + touche(" (P)"), toucheVirtuelle("KeyP", "p"));
+    bouton(L / 2 + 10, H / 2 + 10, 190, 50, "Menu" + touche(" (Échap)"), toucheVirtuelle("Escape"), true);
   }
 }
 
@@ -188,7 +190,7 @@ function dessinerResultats() {
     ecrire("Course en " + chrono(l.tempsFinal), L / 2, 365, 28, "#6a4a8c", true);
     ecrire("Record du tour : " + chrono(meilleurTour), L / 2, 405, 22, "#e08a00", true);
     if (nouveauRecord) ecrire("✨ Nouveau record ! ✨", L / 2, 445, 24, "#ff5e9e", true);
-    if (tempsEcran > 1) ecrire("R : rejouer    ·    Entrée : menu", L / 2, 540, 22, "#8a6aae");
+    if (tempsEcran > 1) boutonsDeFin();
     return;
   }
 
@@ -221,8 +223,14 @@ function dessinerResultats() {
     if (grandPrix !== null) ecrire("+" + r.points, 760, milieuY, 22, "#ff5e9e", false, "right");
   });
 
-  if (tempsEcran > 1) {
-    const aide = grandPrix !== null ? "Entrée : le classement du Grand Prix" : "R : rejouer    ·    Entrée : menu";
-    ecrire(aide, L / 2, 560, 22, "#8a6aae");
+  if (tempsEcran > 1) boutonsDeFin();
+}
+
+function boutonsDeFin() {
+  if (grandPrix !== null) {
+    bouton(L / 2 - 200, 530, 400, 48, "Le classement du Grand Prix" + touche(" (Entrée)"), toucheVirtuelle("Enter"));
+  } else {
+    bouton(L / 2 - 210, 530, 200, 48, "Rejouer" + touche(" (R)"), toucheVirtuelle("KeyR", "r"));
+    bouton(L / 2 + 10, 530, 200, 48, "Menu" + touche(" (Entrée)"), toucheVirtuelle("Enter"), true);
   }
 }

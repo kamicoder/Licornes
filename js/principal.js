@@ -20,8 +20,9 @@ function mettreAJour(duree) {
 }
 
 function dessiner() {
-  pinceau.resetTransform();
+  pinceau.setTransform(FINESSE, 0, 0, FINESSE, 0, 0);
   pinceau.globalAlpha = 1;
+  zones = [];
   if (etat === "menu") dessinerMenu();
   else if (etat === "choix-circuit") dessinerChoixCircuit();
   else if (etat === "atelier") dessinerAtelier();
@@ -96,9 +97,7 @@ function clavierGrandPrix(e) {
   }
 }
 
-document.addEventListener("keydown", function (e) {
-  touches[e.code] = true;
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Backspace"].includes(e.code)) e.preventDefault();
+function traiterTouche(e) {
   sonne();                                 // le navigateur n'autorise le son qu'après un premier appui
   const lettre = e.key.toLowerCase();
 
@@ -120,6 +119,12 @@ document.addEventListener("keydown", function (e) {
   else if (etat === "resultats") clavierResultats(e, lettre);
   else if (etat === "gp-classement" || etat === "gp-podium") clavierGrandPrix(e);
   if (etat !== avant) tempsEcran = 0;
+}
+
+document.addEventListener("keydown", function (e) {
+  touches[e.code] = true;
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Backspace"].includes(e.code)) e.preventDefault();
+  traiterTouche(e);
 });
 
 document.addEventListener("keyup", function (e) {
@@ -127,33 +132,50 @@ document.addEventListener("keyup", function (e) {
 });
 
 // Si la fenêtre perd la main, on lâche toutes les touches (et on met en pause pendant la course)
-window.addEventListener("blur", function () {
+function mettreDeCote() {
   for (const code in touches) touches[code] = false;
+  lacherTousLesDoigts();
   if (etat === "course") pause = true;
+}
+window.addEventListener("blur", mettreDeCote);
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) mettreDeCote();
 });
 
-// La souris ne sert que dans l'éditeur de circuit
+// La souris et les doigts : les commandes de course, puis les zones à toucher, puis l'éditeur
 function positionSouris(e) {
   const r = toile.getBoundingClientRect();
   return { x: (e.clientX - r.left) * L / r.width, y: (e.clientY - r.top) * H / r.height };
 }
-toile.addEventListener("mousedown", function (e) {
+toile.addEventListener("pointerdown", function (e) {
+  if (e.pointerType === "touch") modeTactile = true;
+  e.preventDefault();
   sonne();
-  if (etat !== "editeur") return;
+  pleinEcran();
   const p = positionSouris(e);
-  sourisEditeur("bas", p.x, p.y, e.button);
+  if (commandesTactilesActives() && doigtSur(e.pointerId, p.x, p.y, true)) return;
+  if (toucherUneZone(p.x, p.y)) return;
+  if (etat === "editeur") sourisEditeur("bas", p.x, p.y, e.button);
 });
-window.addEventListener("mousemove", function (e) {
-  if (etat !== "editeur") return;
+window.addEventListener("pointermove", function (e) {
   const p = positionSouris(e);
-  sourisEditeur("bouge", p.x, p.y, 0);
+  if (e.pointerId in doigts) doigtSur(e.pointerId, p.x, p.y, false);
+  if (etat === "editeur") sourisEditeur("bouge", p.x, p.y, 0);
 });
-window.addEventListener("mouseup", function () {
+function leverLePointeur(e) {
+  doigtLeve(e.pointerId);
   if (etat === "editeur") sourisEditeur("haut", 0, 0, 0);
-});
+}
+window.addEventListener("pointerup", leverLePointeur);
+window.addEventListener("pointercancel", leverLePointeur);
 toile.addEventListener("contextmenu", function (e) {
-  if (etat === "editeur") e.preventDefault();
+  e.preventDefault();
 });
+
+// Le jeu peut s'installer sur l'écran d'accueil et marcher sans réseau
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
 
 musique("menu");
 requestAnimationFrame(boucle);

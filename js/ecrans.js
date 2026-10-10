@@ -41,7 +41,8 @@ function dessinerFondMenu() {
 }
 
 function petitSon() {
-  ecrire(["🔊", "🎵✕", "🔇"][reglageSon] + " M", L - 16, H - 18, 15, "#8a6aae", false, "right");
+  ecrire(["🔊", "🎵✕", "🔇"][reglageSon] + touche(" M"), L - 16, H - 18, modeTactile ? 22 : 15, "#8a6aae", false, "right");
+  zone(L - 90, H - 44, 90, 44, toucheVirtuelle("KeyM", "m"));
 }
 
 // ===== Le menu =====
@@ -54,7 +55,7 @@ function dessinerMenu() {
     { x: 150, titre: "Joueur 1", touches: "←  →", numero: choix[0] },
     { x: 810, titre: "Joueur 2", touches: "Q  D", numero: choix[1] },
   ];
-  for (const carte of cartes) {
+  cartes.forEach(function (carte, joueur) {
     const look = lookDe(carte.numero);
     pinceau.fillStyle = "rgba(255, 255, 255, 0.55)";
     cadre(carte.x - 115, 98, 230, 318, 24);
@@ -63,8 +64,11 @@ function dessinerMenu() {
     const sautille = Math.abs(Math.sin(horloge * 6)) * 6;
     dessinerLicorne(carte.x, 252 - sautille, -Math.PI / 2, look, horloge * 14, 1.9);
     ecrire(look.nom, carte.x, 362, 24, look.criniere[0] === "#ffffff" ? look.ombre : look.criniere[0], true);
-    ecrire("◀  " + carte.touches + "  ▶", carte.x, 394, 15, "#8a6aae");
-  }
+    ecrire(modeTactile ? "◀                    ▶" : "◀  " + carte.touches + "  ▶", carte.x, 394, modeTactile ? 22 : 15, "#8a6aae");
+    // Toucher la moitié gauche ou droite de la carte change de licorne
+    zone(carte.x - 115, 98, 115, 318, function () { changerLicorne(joueur, -1); });
+    zone(carte.x, 98, 115, 318, function () { changerLicorne(joueur, 1); });
+  });
 
   MODES.forEach(function (m, i) {
     const y = 104 + i * 58;
@@ -79,14 +83,17 @@ function dessinerMenu() {
       pinceau.stroke();
     }
     ecrire(m.nom, L / 2, y + 25, choisi ? 24 : 21, choisi ? "#ff5e9e" : "#7a5a9c");
+    zone(L / 2 - 160, y, 320, 48, function () { modeChoisi = i; validerMenu(); });
   });
-  ecrire(MODES[modeChoisi].detail, L / 2, 412, 17, "#6a4a8c");
+  let detail = MODES[modeChoisi].detail;
+  if (modeTactile && modeChoisi === 1) detail = "À deux sur un clavier (au doigt, c'est en solo)";
+  ecrire(detail, L / 2, 412, 17, "#6a4a8c");
 
   const clignote = 0.7 + Math.sin(horloge * 4) * 0.3;
   pinceau.globalAlpha = clignote;
-  ecrire("Entrée : c'est parti !", L / 2, 470, 28, "#ff5e9e", true);
+  ecrire(modeTactile ? "Touche un mode pour jouer !" : "Entrée : c'est parti !", L / 2, 470, 28, "#ff5e9e", true);
   pinceau.globalAlpha = 1;
-  ecrire("↑ ↓ : choisir    ·    Ramasse les étoiles ★ pour le turbo arc-en-ciel", L / 2, 520, 16, "#8a6aae");
+  ecrire(touche("↑ ↓ : choisir    ·    ") + "Ramasse les étoiles ★ pour le turbo arc-en-ciel", L / 2, 520, 16, "#8a6aae");
   ecrire("Flèches arc-en-ciel : petit turbo   ·   Bonbon : géante !   ·   Nuage d'orage : la tête qui tourne", L / 2, 548, 14, "#a58cc4");
   petitSon();
   dessinerMessages();
@@ -193,6 +200,8 @@ function dessinerChoixCircuit() {
   dessinerApercu(def, 235, 88, 490, 320);
   ecrire("◀", 180, 250, 44, "#b07cff", true);
   ecrire("▶", 780, 250, 44, "#b07cff", true);
+  zone(110, 75, 110, 345, toucheVirtuelle("ArrowLeft"));
+  zone(740, 75, 110, 345, toucheVirtuelle("ArrowRight"));
   ecrire(def.nom, L / 2, 455, 34, "#ff5e9e", true);
   ecrire((choixCircuit.index + 1) + " / " + liste.length, L / 2, 486, 15, "#a58cc4");
 
@@ -201,11 +210,12 @@ function dessinerChoixCircuit() {
     ecrire(record ? "Record du tour : " + chrono(record.temps) : "Pas encore de record", L / 2, 516, 19, "#e08a00");
   } else {
     const texte = choixCircuit.rivales === 0 ? "aucune, juste vous deux" : choixCircuit.rivales + " licornes de l'ordinateur";
-    ecrire("R : rivales : " + texte, L / 2, 516, 19, "#6a4a8c");
+    ecrire(touche("R : ") + "rivales : " + texte + (modeTactile ? "  (touche pour changer)" : ""), L / 2, 516, 19, "#6a4a8c");
+    zone(L / 2 - 260, 500, 520, 34, toucheVirtuelle("KeyR", "r"));
   }
-  let aide = "← → : circuit    ·    Entrée : partir    ·    Échap : retour";
-  if (def.id === "perso") aide = aide + "    ·    E : modifier";
-  ecrire(aide, L / 2, 560, 16, "#8a6aae");
+  bouton(190, 540, 180, 44, "Retour" + touche(" (Échap)"), toucheVirtuelle("Escape"), true);
+  bouton(385, 540, 190, 44, "Partir !" + touche(" (Entrée)"), toucheVirtuelle("Enter"));
+  if (def.id === "perso") bouton(590, 540, 180, 44, "Modifier" + touche(" (E)"), toucheVirtuelle("KeyE", "e"), true);
   petitSon();
 }
 
@@ -292,8 +302,13 @@ function dessinerAtelier() {
       pinceau.stroke();
     }
     const cy = y + 28;
+    zone(445, y, 485, 54, function () { toucherLigneAtelier(i, 0); });
+    if (ligne !== "nom" && ligne !== "remettre") {
+      zone(575, y, 85, 54, function () { toucherLigneAtelier(i, -1); });
+      zone(860, y, 70, 54, function () { toucherLigneAtelier(i, 1); });
+    }
     if (ligne === "remettre") {
-      ecrire("↺  Remettre comme à l'origine (Entrée)", 687, cy, 18, choisie ? "#ff5e9e" : "#8a6aae");
+      ecrire("↺  Remettre comme à l'origine" + touche(" (Entrée)"), 687, cy, 18, choisie ? "#ff5e9e" : "#8a6aae");
       return;
     }
     ecrire(libelles[ligne], 465, cy, 19, "#6a4a8c", false, "left");
@@ -307,7 +322,7 @@ function dessinerAtelier() {
     } else if (ligne === "nom") {
       const curseur = choisie && Math.floor(horloge * 2) % 2 === 0 ? "|" : "";
       ecrire(look.nom + curseur, vx, cy, 22, "#ff5e9e");
-      if (choisie) ecrire("tape au clavier", 905, cy + 14, 11, "#a58cc4", false, "right");
+      if (choisie || modeTactile) ecrire(modeTactile ? "touche pour changer" : "tape au clavier", 905, cy + 14, 11, "#a58cc4", false, "right");
     } else if (ligne === "corps") {
       pinceau.fillStyle = look.corps;
       pinceau.strokeStyle = look.ombre;
@@ -332,7 +347,26 @@ function dessinerAtelier() {
       ecrire(NOMS_ACCESSOIRES[look.accessoire || "aucun"], vx, cy, 17, "#6a4a8c");
     }
   });
-  ecrire("↑ ↓ : choisir   ·   ← → : changer   ·   Échap : retour au menu", 687, 560, 15, "#8a6aae");
+  if (!modeTactile) ecrire("↑ ↓ : choisir   ·   ← → : changer", 450, 560, 14, "#8a6aae", false, "left");
+  bouton(750, 538, 180, 42, "Terminé" + touche(" (Échap)"), toucheVirtuelle("Escape"));
+}
+
+// Au doigt : toucher une ligne la choisit ; ses flèches changent la valeur ; le nom se tape dans une fenêtre
+function toucherLigneAtelier(i, sens) {
+  atelier.ligne = i;
+  const ligne = LIGNES_ATELIER[i];
+  if (sens < 0) toucheVirtuelle("ArrowLeft")();
+  else if (sens > 0) toucheVirtuelle("ArrowRight")();
+  else if (ligne === "nom") demanderNom();
+  else if (ligne === "remettre") toucheVirtuelle("Enter")();
+  else toucheVirtuelle("ArrowRight")();
+}
+
+function demanderNom() {
+  const nom = window.prompt("Le nom de ta licorne :", lookDe(atelier.numero).nom);
+  if (nom !== null && nom.trim() !== "") {
+    changerLook(function (l) { l.nom = nom.trim().slice(0, 14); });
+  }
 }
 
 function clavierAtelier(e) {
@@ -482,13 +516,18 @@ function sourisEditeur(type, x, y, bouton) {
 function dessinerEditeur() {
   dessinerFondMenu();
   ecrire("Dessine ton circuit", L / 2, 22, 26, degradeArcEnCiel(L / 2 - 140, L / 2 + 140), true);
-  ecrire("Clic : un point (sur la route : il s'y glisse)  ·  Glisser : déplacer  ·  Clic droit : effacer  ·  Entrée : enregistrer  ·  Échap : annuler",
-    L / 2, 50, 12.5, "#6a4a8c");
+  ecrire(modeTactile
+    ? "Touche : un point (sur la route : il s'y glisse)  ·  Glisse un point pour le déplacer"
+    : "Clic : un point (sur la route : il s'y glisse)  ·  Glisser : déplacer  ·  Clic droit : effacer",
+  L / 2, 52, 13, "#6a4a8c");
+  bouton(10, 6, 125, 34, "✕ Annuler", toucheVirtuelle("Escape"), true);
+  bouton(L - 270, 6, 125, 34, "↶ Effacer", toucheVirtuelle("Backspace"), true);
+  bouton(L - 135, 6, 125, 34, "✓ Garder", toucheVirtuelle("Enter"));
 
   const def = { largeur: MONDE_EDITEUR.largeur, hauteur: MONDE_EDITEUR.hauteur, points: editeur.points };
   dessinerApercu(def, ED_X0, ED_Y0, MONDE_EDITEUR.largeur * ED_ECHELLE, MONDE_EDITEUR.hauteur * ED_ECHELLE);
   if (editeur.points.length === 0) {
-    ecrire("Clique pour poser le premier point : ce sera le départ !", L / 2, ED_Y0 + 260, 22, "#8a6aae");
+    ecrire((modeTactile ? "Touche" : "Clique") + " pour poser le premier point : ce sera le départ !", L / 2, ED_Y0 + 260, 22, "#8a6aae");
   }
 
   editeur.points.forEach(function (p, i) {
@@ -558,11 +597,11 @@ function dessinerClassementGP() {
   });
   if (tempsEcran > 0.6) {
     const texte = fini < GRAND_PRIX.length
-      ? "Entrée : course suivante, " + CIRCUITS.find(function (c) { return c.id === GRAND_PRIX[fini].id; }).nom
-      : "Entrée : la remise des prix !";
-    ecrire(texte, L / 2, 480, 24, "#ff5e9e", true);
+      ? "Course suivante : " + CIRCUITS.find(function (c) { return c.id === GRAND_PRIX[fini].id; }).nom
+      : "La remise des prix !";
+    bouton(L / 2 - 230, 465, 460, 50, texte + touche(" (Entrée)"), toucheVirtuelle("Enter"));
   }
-  ecrire("Échap : abandonner le Grand Prix", L / 2, 560, 14, "#a58cc4");
+  bouton(L / 2 - 120, 540, 240, 36, "Abandonner" + touche(" (Échap)"), toucheVirtuelle("Escape"), true);
 }
 
 function dessinerPodium() {
@@ -592,5 +631,5 @@ function dessinerPodium() {
     dessinerLicorne(m.x, sol - m.h - 75 - saut, -Math.PI / 2, look, horloge * 14, 1.45);
     ecrire(look.nom, m.x, sol - m.h - 168 - saut, 20, "#6a4a8c", true);
   }
-  if (tempsEcran > 1) ecrire("Entrée : menu", L / 2, 578, 18, "#8a6aae");
+  if (tempsEcran > 1) bouton(L / 2 - 80, 556, 160, 38, "Menu" + touche(" (Entrée)"), toucheVirtuelle("Enter"), true);
 }

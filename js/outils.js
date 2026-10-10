@@ -3,8 +3,11 @@
 
 const toile = document.getElementById("toile");
 const pinceau = toile.getContext("2d");
-const L = toile.width;
-const H = toile.height;
+const L = 960;                 // on dessine toujours sur une toile de 960 × 600…
+const H = 600;
+const FINESSE = Math.min(2, window.devicePixelRatio || 1);   // … avec plus de pixels sur les écrans fins
+toile.width = L * FINESSE;
+toile.height = H * FINESSE;
 const POLICE = "Fredoka, Verdana, sans-serif";
 
 // La sauvegarde du navigateur peut être refusée : on fait sans
