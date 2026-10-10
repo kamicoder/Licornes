@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Course des Licornes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(160deg, #ffe3f3, #e6dcff 50%, #d6efff);
+      font-family: Fredoka, Verdana, sans-serif;
+      color: #6a4a8c;
+    }
+    canvas {
+      display: block;
+      width: min(100%, calc((100vh - 110px) * 1.6));
+      height: auto;
+      aspect-ratio: 960 / 600;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(150, 90, 200, 0.35);
+      background: #fdf6ff;
+    }
+    .aide { margin: 0; font-size: 15px; text-align: center; line-height: 1.5; }
+    kbd {
+      font-family: inherit;
+      background: white;
+      border-radius: 6px;
+      padding: 0 6px;
+      box-shadow: 0 2px 0 #d4bfe8;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="toile" width="960" height="600"></canvas>
+  <p class="aide">
+    Joueur 1 : <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>, turbo <kbd>Entrée</kbd> (ou <kbd>Espace</kbd> en solo)
+    · Joueur 2 : <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd>, turbo <kbd>Espace</kbd>
+    <br><kbd>P</kbd> pause · <kbd>M</kbd> son et musique · <kbd>Échap</kbd> menu
+  </p>
+  <script src="js/outils.js"></script>
+  <script src="js/donnees.js"></script>
+  <script src="js/sons.js"></script>
+  <script src="js/circuit.js"></script>
+  <script src="js/dessins.js"></script>
+  <script src="js/licorne.js"></script>
+  <script src="js/course.js"></script>
+  <script src="js/affichage-course.js"></script>
+  <script src="js/ecrans.js"></script>
+  <script src="js/principal.js"></script>
+</body>
+</html>
