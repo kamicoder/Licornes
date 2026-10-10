@@ -39,6 +39,7 @@ function boucle(temps) {
   duree = Math.min(duree, 0.05);           // après une pause, rien ne fait de bond
   if (!pause) mettreAJour(duree);
   dessiner();
+  rechargerSiNouvelleVersion();
   requestAnimationFrame(boucle);
 }
 
