@@ -72,6 +72,20 @@ class Licorne {
     this.progres = s > circuit.longueur / 2 ? s - circuit.longueur : s;
   }
 
+  // Une joueuse au doigt reçoit les coups de pouce d'AIDE_MOBILE
+  aidee() {
+    return this.humain && !this.pilote && modeTactile && humains.length === 1;
+  }
+
+  // L'aide au pilotage : on vise un point de la route un peu devant, et on tourne doucement vers lui
+  redresser(duree, roule) {
+    const t = circuit.trace;
+    const cible = t[(this.indice + 12 + Math.round(Math.max(0, this.vitesse) / 40)) % t.length];
+    const ecart = angleEntre(Math.atan2(cible.y - this.y, cible.x - this.x) - this.angle);
+    const pas = AIDE_MOBILE.direction * roule * duree;
+    this.angle = this.angle + Math.max(-pas, Math.min(pas, ecart));
+  }
+
   echelle() {
     let grandeur = 1;
     if (this.geante > 0) {
@@ -153,7 +167,7 @@ class Licorne {
     let adherence = ADHERENCE;
     // En turbo, la licorne vole au-dessus des nuages : ils ne la freinent plus
     if (!enTurbo && !surLaRoute(this.x, this.y)) {
-      frottement = FROTTEMENT_NUAGE;
+      frottement = this.aidee() ? AIDE_MOBILE.frottementNuage : FROTTEMENT_NUAGE;
       adherence = ADHERENCE_NUAGE;
     }
 
@@ -185,6 +199,7 @@ class Licorne {
     const sens = avant < 0 ? -1 : 1;
     if (this.entrees.gauche) this.angle = this.angle - virage * roule * sens * duree;
     if (this.entrees.droite) this.angle = this.angle + virage * roule * sens * duree;
+    if (this.aidee() && !this.entrees.gauche && !this.entrees.droite && avant > 100) this.redresser(duree, roule);
 
     this.vx = avant * devantX - cote * devantY;
     this.vy = avant * devantY + cote * devantX;
@@ -271,7 +286,7 @@ class Licorne {
       if (this.attenteOrage > 0 || Math.hypot(this.x - orage.x, this.y - orage.y) > portee - 4) continue;
       this.attenteOrage = 1.5;
       if (this.geante > 0 || this.turbo > 0) continue;   // trop grande, ou trop rapide pour l'orage
-      this.etourdir(DUREE_ETOURDIE);
+      this.etourdir(DUREE_ETOURDIE * (this.aidee() ? AIDE_MOBILE.etourdie : 1));
       if (this.humain) sonOrage();
     }
   }

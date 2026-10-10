@@ -78,7 +78,8 @@ function lancerCourse(config) {
   // Les rivales : la première est la plus forte
   const ecarts = [0.03, -0.02, -0.07];
   const rivales = config.rivales.map(function (numero, k) {
-    return new Licorne({ numero: numero, humain: false, niveau: config.niveau + ecarts[k % ecarts.length] });
+    const niveau = (config.niveau + ecarts[k % ecarts.length]) * (modeTactile && !deux ? AIDE_MOBILE.rivales : 1);
+    return new Licorne({ numero: numero, humain: false, niveau: niveau });
   });
   licornes = humains.concat(rivales);
 

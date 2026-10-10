@@ -24,6 +24,14 @@ const LARGEUR_ROUTE = 160;
 const LIMITE = LARGEUR_ROUTE / 2 + 75;   // plus loin du milieu de la route : la barrière de nuages
 const TAILLE_LICORNE = 1.1;
 
+// Au doigt, c'est plus difficile qu'au clavier : quelques coups de pouce
+const AIDE_MOBILE = {
+  rivales: 0.92,            // les rivales vont un peu moins vite
+  frottementNuage: 1.3,     // les nuages au bord de la route collent moins
+  etourdie: 0.5,            // un orage étourdit deux fois moins longtemps
+  direction: 0.7,           // sans toucher ◀ ▶, la licorne se remet doucement dans l'axe de la route
+};
+
 const ARC_EN_CIEL = ["#ff5e7e", "#ff9f43", "#ffd93d", "#6bdb8f", "#4fc3ff", "#7b7bff", "#c47dff"];
 
 // ===== Les licornes (l'atelier peut les changer : voir lookDe) =====
