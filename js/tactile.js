@@ -144,10 +144,57 @@ function dessinerCommandesTactiles() {
   }
 }
 
-// Sur téléphone : le plein écran et le paysage, au premier toucher (là où le navigateur le permet)
+// ===== Le plein écran et l'installation sur l'écran d'accueil =====
+// Le navigateur affiche un message à chaque passage en plein écran : on ne le demande que sur un bouton.
+// Le jeu installé, lui, s'ouvre directement en plein écran, sans message.
+
+const SUR_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let invitationInstallation = null;     // Chrome sur Android propose d'installer : on garde sa proposition pour un bouton
+
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault();
+  invitationInstallation = e;
+});
+window.addEventListener("appinstalled", function () {
+  invitationInstallation = null;
+});
+
+function estInstalle() {
+  return window.matchMedia("(display-mode: fullscreen)").matches
+    || window.matchMedia("(display-mode: standalone)").matches
+    || navigator.standalone === true;
+}
+
+function peutPasserEnPleinEcran() {
+  return !SUR_IOS && !estInstalle() && !document.fullscreenElement && document.documentElement.requestFullscreen !== undefined;
+}
+
 function pleinEcran() {
-  if (!modeTactile || document.fullscreenElement || !document.documentElement.requestFullscreen) return;
   document.documentElement.requestFullscreen({ navigationUI: "hide" }).then(function () {
     if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(function () {});
   }).catch(function () {});
+}
+
+function installer() {
+  const invitation = invitationInstallation;
+  invitationInstallation = null;
+  invitation.prompt();
+}
+
+// En bas du menu, sur téléphone : installer le jeu, ou passer en plein écran
+function dessinerBoutonsMobile() {
+  if (!modeTactile || estInstalle()) return;
+  const boutons = [];
+  if (invitationInstallation !== null) boutons.push({ texte: "📲 Installer le jeu", action: installer });
+  if (peutPasserEnPleinEcran()) boutons.push({ texte: "⛶ Plein écran", action: pleinEcran });
+  if (boutons.length === 0) {
+    if (SUR_IOS) ecrire("Pour le plein écran : Partager, puis « Sur l'écran d'accueil »", L / 2, 560, 16, "#a58cc4");
+    return;
+  }
+  const largeur = 230;
+  let x = L / 2 - (boutons.length * largeur + (boutons.length - 1) * 16) / 2;
+  for (const b of boutons) {
+    bouton(x, 540, largeur, 42, b.texte, b.action, true);
+    x = x + largeur + 16;
+  }
 }

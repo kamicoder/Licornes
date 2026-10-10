@@ -151,7 +151,6 @@ toile.addEventListener("pointerdown", function (e) {
   if (e.pointerType === "touch") modeTactile = true;
   e.preventDefault();
   sonne();
-  pleinEcran();
   const p = positionSouris(e);
   if (commandesTactilesActives() && doigtSur(e.pointerId, p.x, p.y, true)) return;
   if (toucherUneZone(p.x, p.y)) return;

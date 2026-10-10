@@ -2,13 +2,18 @@
 "use strict";
 
 const MODES = [
-  { nom: "Grand Prix", detail: "5 courses contre 3 licornes, de plus en plus corsées" },
-  { nom: "Course à deux", detail: "L'écran est partagé : chacune sa moitié" },
-  { nom: "Contre la montre", detail: "Bats ton record et ton fantôme" },
-  { nom: "Atelier des licornes", detail: "Son nom, ses couleurs, ses accessoires" },
-  { nom: "Dessiner un circuit", detail: "Place les points à la souris" },
+  { id: "gp", nom: "Grand Prix", detail: "5 courses contre 3 licornes, de plus en plus corsées" },
+  { id: "duo", nom: "Course à deux", detail: "L'écran est partagé : chacune sa moitié" },
+  { id: "chrono", nom: "Contre la montre", detail: "Bats ton record et ton fantôme" },
+  { id: "atelier", nom: "Atelier des licornes", detail: "Son nom, ses couleurs, ses accessoires" },
+  { id: "editeur", nom: "Dessiner un circuit", detail: "Place les points à la souris" },
 ];
 let modeChoisi = 0;
+
+// Au doigt, on joue seule : pas de course à deux
+function modesVisibles() {
+  return modeTactile ? MODES.filter(function (m) { return m.id !== "duo"; }) : MODES;
+}
 
 function dessinerFondMenu() {
   const fond = pinceau.createLinearGradient(0, 0, 0, H);
@@ -50,11 +55,19 @@ function petitSon() {
 function dessinerMenu() {
   dessinerFondMenu();
   ecrire("La Course des Licornes", L / 2, 52, 52, degradeArcEnCiel(L / 2 - 300, L / 2 + 300), true);
+  const modes = modesVisibles();
+  modeChoisi = Math.min(modeChoisi, modes.length - 1);
 
-  const cartes = [
-    { x: 150, titre: "Joueur 1", touches: "←  →", numero: choix[0] },
-    { x: 810, titre: "Joueur 2", touches: "Q  D", numero: choix[1] },
-  ];
+  // Au doigt : une seule carte, et la liste des modes à côté
+  const cartes = modeTactile
+    ? [{ x: 250, titre: "Ta licorne", touches: "", numero: choix[0] }]
+    : [
+      { x: 150, titre: "Joueur 1", touches: "←  →", numero: choix[0] },
+      { x: 810, titre: "Joueur 2", touches: "Q  D", numero: choix[1] },
+    ];
+  const listeX = modeTactile ? 610 : L / 2;
+  const ecart = modeTactile ? 72 : 58;
+
   cartes.forEach(function (carte, joueur) {
     const look = lookDe(carte.numero);
     pinceau.fillStyle = "rgba(255, 255, 255, 0.55)";
@@ -70,41 +83,46 @@ function dessinerMenu() {
     zone(carte.x, 98, 115, 318, function () { changerLicorne(joueur, 1); });
   });
 
-  MODES.forEach(function (m, i) {
-    const y = 104 + i * 58;
+  modes.forEach(function (m, i) {
+    const y = 104 + i * ecart;
     const choisi = i === modeChoisi;
     pinceau.fillStyle = choisi ? "white" : "rgba(255, 255, 255, 0.45)";
-    cadre(L / 2 - 160, y, 320, 48, 24);
+    cadre(listeX - 160, y, 320, 48, 24);
     pinceau.fill();
     if (choisi) {
-      pinceau.strokeStyle = degradeArcEnCiel(L / 2 - 160, L / 2 + 160);
+      pinceau.strokeStyle = degradeArcEnCiel(listeX - 160, listeX + 160);
       pinceau.lineWidth = 4;
-      cadre(L / 2 - 160, y, 320, 48, 24);
+      cadre(listeX - 160, y, 320, 48, 24);
       pinceau.stroke();
     }
-    ecrire(m.nom, L / 2, y + 25, choisi ? 24 : 21, choisi ? "#ff5e9e" : "#7a5a9c");
-    zone(L / 2 - 160, y, 320, 48, function () { modeChoisi = i; validerMenu(); });
+    ecrire(m.nom, listeX, y + 25, choisi ? 24 : 21, choisi ? "#ff5e9e" : "#7a5a9c");
+    zone(listeX - 160, y, 320, 48, function () { modeChoisi = i; validerMenu(); });
   });
-  let detail = MODES[modeChoisi].detail;
-  if (modeTactile && modeChoisi === 1) detail = "À deux sur un clavier (au doigt, c'est en solo)";
-  ecrire(detail, L / 2, 412, 17, "#6a4a8c");
+  let detail = modes[modeChoisi].detail;
+  if (modeTactile && modes[modeChoisi].id === "editeur") detail = "Place les points du bout du doigt";
+  ecrire(detail, listeX, 412, 17, "#6a4a8c");
 
   const clignote = 0.7 + Math.sin(horloge * 4) * 0.3;
   pinceau.globalAlpha = clignote;
   ecrire(modeTactile ? "Touche un mode pour jouer !" : "Entrée : c'est parti !", L / 2, 470, 28, "#ff5e9e", true);
   pinceau.globalAlpha = 1;
-  ecrire(touche("↑ ↓ : choisir    ·    ") + "Ramasse les étoiles ★ pour le turbo arc-en-ciel", L / 2, 520, 16, "#8a6aae");
-  ecrire("Flèches arc-en-ciel : petit turbo   ·   Bonbon : géante !   ·   Nuage d'orage : la tête qui tourne", L / 2, 548, 14, "#a58cc4");
+  ecrire(touche("↑ ↓ : choisir    ·    ") + "Ramasse les étoiles ★ pour le turbo arc-en-ciel", L / 2, 512, 16, "#8a6aae");
+  if (modeTactile) {
+    dessinerBoutonsMobile();
+  } else {
+    ecrire("Flèches arc-en-ciel : petit turbo   ·   Bonbon : géante !   ·   Nuage d'orage : la tête qui tourne", L / 2, 548, 14, "#a58cc4");
+  }
   petitSon();
   dessinerMessages();
 }
 
 function validerMenu() {
   sonMenu();
-  if (modeChoisi === 0) commencerGrandPrix();
-  else if (modeChoisi === 1) ouvrirChoixCircuit("duo");
-  else if (modeChoisi === 2) ouvrirChoixCircuit("chrono");
-  else if (modeChoisi === 3) ouvrirAtelier();
+  const id = modesVisibles()[modeChoisi].id;
+  if (id === "gp") commencerGrandPrix();
+  else if (id === "duo") ouvrirChoixCircuit("duo");
+  else if (id === "chrono") ouvrirChoixCircuit("chrono");
+  else if (id === "atelier") ouvrirAtelier();
   else ouvrirEditeur();
 }
 
@@ -112,7 +130,9 @@ function changerLicorne(joueur, sens) {
   const autre = choix[1 - joueur];
   do {
     choix[joueur] = (choix[joueur] + sens + LICORNES.length) % LICORNES.length;
-  } while (choix[joueur] === autre);
+  } while (choix[joueur] === autre && !modeTactile);
+  // Au doigt, on joue seule : toutes les licornes sont permises, et la joueuse 2 prend la suivante
+  if (choix[0] === choix[1]) choix[1] = (choix[0] + 1) % LICORNES.length;
   garder("licornes-j1", choix[0]);
   garder("licornes-j2", choix[1]);
   sonMenu();
@@ -120,10 +140,10 @@ function changerLicorne(joueur, sens) {
 
 function clavierMenu(e) {
   if (e.code === "ArrowUp" || e.code === "KeyW") {
-    modeChoisi = (modeChoisi + MODES.length - 1) % MODES.length;
+    modeChoisi = (modeChoisi + modesVisibles().length - 1) % modesVisibles().length;
     sonMenu();
   } else if (e.code === "ArrowDown" || e.code === "KeyS") {
-    modeChoisi = (modeChoisi + 1) % MODES.length;
+    modeChoisi = (modeChoisi + 1) % modesVisibles().length;
     sonMenu();
   } else if (e.code === "ArrowLeft") changerLicorne(0, -1);
   else if (e.code === "ArrowRight") changerLicorne(0, 1);
