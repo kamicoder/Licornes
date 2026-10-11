@@ -24,13 +24,36 @@ const LARGEUR_ROUTE = 160;
 const LIMITE = LARGEUR_ROUTE / 2 + 75;   // plus loin du milieu de la route : la barrière de nuages
 const TAILLE_LICORNE = 1.1;
 
-// Au doigt, c'est plus difficile qu'au clavier : quelques coups de pouce
-const AIDE_MOBILE = {
-  rivales: 0.92,            // les rivales vont un peu moins vite
-  frottementNuage: 1.3,     // les nuages au bord de la route collent moins
-  etourdie: 0.5,            // un orage étourdit deux fois moins longtemps
-  direction: 0.7,           // sans toucher ◀ ▶, la licorne se remet doucement dans l'axe de la route
-};
+// Les niveaux, à choisir au menu
+//   rivales : leur vitesse ; frottementNuage : combien les nuages du bord freinent ;
+//   etourdie : la durée d'un étourdissement ; direction : l'aide au pilotage (0 : aucune) ;
+//   elastique : les rivales en tête attendent les joueuses, celles qui traînent se dépêchent (0 : non)
+const NIVEAUX = [
+  { id: "facile", nom: "🐣 Facile", rivales: 0.68, frottementNuage: 1.3, etourdie: 0.5, direction: 0.8, elastique: 1 },
+  { id: "normal", nom: "🦄 Normal", rivales: 1, frottementNuage: 2.6, etourdie: 1, direction: 0, elastique: 0.5 },
+  { id: "expert", nom: "🔥 Expert", rivales: 1.08, frottementNuage: 2.6, etourdie: 1, direction: 0, elastique: 0 },
+];
+// Au doigt, c'est plus difficile qu'au clavier : un coup de pouce de plus, quel que soit le niveau
+const AIDE_DOIGT = { rivales: 0.95, direction: 0.5 };
+const REPECHAGE = 3;      // une licorne qui n'avance plus depuis ce temps (en secondes) est remise sur la route
+
+let niveauChoisi = Math.max(0, NIVEAUX.findIndex(function (n) { return n.id === lire("licornes-niveau"); }));
+
+function aides() {
+  const n = NIVEAUX[niveauChoisi];
+  if (!modeTactile) return n;
+  return {
+    id: n.id, nom: n.nom, frottementNuage: n.frottementNuage, etourdie: n.etourdie, elastique: n.elastique,
+    rivales: n.rivales * AIDE_DOIGT.rivales,
+    direction: Math.max(n.direction, AIDE_DOIGT.direction),
+  };
+}
+
+function changerDeNiveau() {
+  niveauChoisi = (niveauChoisi + 1) % NIVEAUX.length;
+  garder("licornes-niveau", NIVEAUX[niveauChoisi].id);
+  sonMenu();
+}
 
 const ARC_EN_CIEL = ["#ff5e7e", "#ff9f43", "#ffd93d", "#6bdb8f", "#4fc3ff", "#7b7bff", "#c47dff"];
 

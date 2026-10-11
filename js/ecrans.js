@@ -109,8 +109,10 @@ function dessinerMenu() {
   ecrire(touche("↑ ↓ : choisir    ·    ") + "Ramasse les étoiles ★ pour le turbo arc-en-ciel", L / 2, 512, 16, "#8a6aae");
   if (modeTactile) {
     dessinerBoutonsMobile();
+    bouton(16, 540, 200, 42, NIVEAUX[niveauChoisi].nom, changerDeNiveau, true);
   } else {
-    ecrire("Flèches arc-en-ciel : petit turbo   ·   Bonbon : géante !   ·   Nuage d'orage : la tête qui tourne", L / 2, 548, 14, "#a58cc4");
+    ecrire("Flèches arc-en-ciel : petit turbo   ·   Bonbon : géante !   ·   Nuage d'orage : la tête qui tourne", L / 2, 540, 14, "#a58cc4");
+    bouton(16, 556, 230, 36, "Niveau : " + NIVEAUX[niveauChoisi].nom + " (N)", changerDeNiveau, true);
   }
   petitSon();
   dessinerMessages();
@@ -149,6 +151,7 @@ function clavierMenu(e) {
   else if (e.code === "ArrowRight") changerLicorne(0, 1);
   else if (e.code === "KeyA") changerLicorne(1, -1);
   else if (e.code === "KeyD") changerLicorne(1, 1);
+  else if (e.code === "KeyN") changerDeNiveau();
   else if (e.code === "Enter" || e.code === "NumpadEnter" || e.code === "Space") validerMenu();
 }
 
@@ -445,6 +448,7 @@ function clavierAtelier(e) {
 const ED_ECHELLE = 0.29;
 const ED_X0 = (L - MONDE_EDITEUR.largeur * ED_ECHELLE) / 2;
 const ED_Y0 = 68;
+const POINTS_MAX_EDITEUR = 10;  // au-delà, le circuit devient vite un sac de nœuds
 const ED_MARGE = 230;               // les points restent loin du bord du monde
 const editeur = { points: [], glisse: -1, survol: -1 };
 
@@ -511,8 +515,9 @@ function sourisEditeur(type, x, y, bouton) {
       return;
     }
     if (x < ED_X0 || y < ED_Y0 || x > L - ED_X0 || y > ED_Y0 + MONDE_EDITEUR.hauteur * ED_ECHELLE) return;
-    if (editeur.points.length >= 40) {
-      annoncer("40 points au plus", "#ff5e9e");
+    if (editeur.points.length >= POINTS_MAX_EDITEUR) {
+      annoncer(POINTS_MAX_EDITEUR + " points au plus", "#ff5e9e");
+      sonNon();
       return;
     }
     const cote = coteSous(x, y);
@@ -562,7 +567,8 @@ function dessinerEditeur() {
     ecrire(String(i + 1), e.x, e.y + 1, 10, "white");
     if (i === 0) ecrire("Départ", e.x, e.y - 20, 14, "#ff5e9e", true);
   });
-  ecrire(editeur.points.length + " points", ED_X0 + 14, ED_Y0 + 16, 14, "#8a6aae", false, "left");
+  ecrire(editeur.points.length + " / " + POINTS_MAX_EDITEUR + " points", ED_X0 + 14, ED_Y0 + 16, 14,
+    editeur.points.length >= POINTS_MAX_EDITEUR ? "#ff5e9e" : "#8a6aae", false, "left");
   dessinerMessages();
 }
 

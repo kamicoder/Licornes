@@ -18,6 +18,16 @@ function lookDe(numero) {
   };
 }
 
+// L'effet élastique : une rivale loin devant les joueuses ralentit, une rivale loin derrière se dépêche
+function elastique(licorne) {
+  const force = aides().elastique;
+  const enCourse = humains.filter(function (h) { return !h.fini; });
+  if (!force || enCourse.length === 0) return 1;
+  const tete = Math.max.apply(null, enCourse.map(function (h) { return h.progres; }));
+  const ecart = Math.max(-1, Math.min(1, (licorne.progres - tete) / 900));
+  return ecart > 0 ? 1 - force * 0.6 * ecart : 1 - force * 0.15 * ecart;
+}
+
 class Licorne {
   // options : numero (dans LICORNES), humain, commandes, touchesTurbo, niveau (1 = la vitesse pleine)
   constructor(options) {
@@ -70,11 +80,14 @@ class Licorne {
     this.indice = plusProche(circuit, this.x, this.y, -1);
     const s = circuit.trace[this.indice].s;
     this.progres = s > circuit.longueur / 2 ? s - circuit.longueur : s;
+    this.meilleurProgres = this.progres;   // pour voir si elle avance encore
+    this.bloquee = 0;
+    this.elan = 1;
   }
 
-  // Une joueuse au doigt reçoit les coups de pouce d'AIDE_MOBILE
+  // Les joueuses reçoivent les coups de pouce du niveau choisi (voir aides)
   aidee() {
-    return this.humain && !this.pilote && modeTactile && humains.length === 1;
+    return this.humain && !this.pilote;
   }
 
   // L'aide au pilotage : on vise un point de la route un peu devant, et on tourne doucement vers lui
@@ -82,7 +95,7 @@ class Licorne {
     const t = circuit.trace;
     const cible = t[(this.indice + 12 + Math.round(Math.max(0, this.vitesse) / 40)) % t.length];
     const ecart = angleEntre(Math.atan2(cible.y - this.y, cible.x - this.x) - this.angle);
-    const pas = AIDE_MOBILE.direction * roule * duree;
+    const pas = aides().direction * roule * duree;
     this.angle = this.angle + Math.max(-pas, Math.min(pas, ecart));
   }
 
@@ -132,7 +145,8 @@ class Licorne {
     const ici = t[this.indice];
     const loin = t[(this.indice + avance + 25) % N];
     const virage = Math.abs(angleEntre(Math.atan2(loin.ty, loin.tx) - Math.atan2(ici.ty, ici.tx)));
-    const vitesseVoulue = VITESSE_MAX * this.niveau * (1 - Math.min(0.45, virage * 0.28));
+    this.elan = this.pilote ? 1 : elastique(this);
+    const vitesseVoulue = VITESSE_MAX * this.niveau * this.elan * (1 - Math.min(0.45, virage * 0.28));
 
     this.entrees.gauche = ecart < -0.05;
     this.entrees.droite = ecart > 0.05;
@@ -167,7 +181,7 @@ class Licorne {
     let adherence = ADHERENCE;
     // En turbo, la licorne vole au-dessus des nuages : ils ne la freinent plus
     if (!enTurbo && !surLaRoute(this.x, this.y)) {
-      frottement = this.aidee() ? AIDE_MOBILE.frottementNuage : FROTTEMENT_NUAGE;
+      frottement = this.aidee() ? aides().frottementNuage : FROTTEMENT_NUAGE;
       adherence = ADHERENCE_NUAGE;
     }
 
@@ -176,7 +190,7 @@ class Licorne {
     let avant = this.vx * devantX + this.vy * devantY;
     let cote = -this.vx * devantY + this.vy * devantX;
 
-    let vmax = VITESSE_MAX * this.niveau;
+    let vmax = VITESSE_MAX * this.niveau * (this.humain && !this.pilote ? 1 : this.elan);
     if (this.geante > 0) vmax = vmax * 1.06;
     if (enTurbo) {
       vmax = VITESSE_TURBO;
@@ -195,11 +209,14 @@ class Licorne {
     avant = Math.max(-MARCHE_ARRIERE, avant);
     cote = cote - cote * Math.min(1, adherence * duree);
 
-    const roule = Math.min(1, Math.abs(avant) / 150);
-    const sens = avant < 0 ? -1 : 1;
+    // Une licorne n'est pas une voiture : même arrêtée, elle peut pivoter sur place
+    const roule = Math.max(0.6, Math.min(1, Math.abs(avant) / 150));
+    const sens = avant < -20 ? -1 : 1;
     if (this.entrees.gauche) this.angle = this.angle - virage * roule * sens * duree;
     if (this.entrees.droite) this.angle = this.angle + virage * roule * sens * duree;
-    if (this.aidee() && !this.entrees.gauche && !this.entrees.droite && avant > 100) this.redresser(duree, roule);
+    if (this.aidee() && aides().direction > 0 && !this.entrees.gauche && !this.entrees.droite && avant > 100) {
+      this.redresser(duree, roule);
+    }
 
     this.vx = avant * devantX - cote * devantY;
     this.vy = avant * devantY + cote * devantX;
@@ -207,7 +224,8 @@ class Licorne {
     this.y = Math.max(0, Math.min(this.y + this.vy * duree, circuit.hauteur));
     this.vitesse = avant;
 
-    this.suivreLaTrace();
+    this.suivreLaTrace(duree);
+    this.repecherSiBloquee(duree);
 
     this.tourbillon = this.etourdie > 0 ? this.tourbillon + duree * 12 : 0;
 
@@ -229,7 +247,7 @@ class Licorne {
   }
 
   // La barrière de nuages, et la distance parcourue le long de la route
-  suivreLaTrace() {
+  suivreLaTrace(duree) {
     const i = plusProche(circuit, this.x, this.y, this.indice);
     const p = circuit.trace[i];
     const dx = this.x - p.x;
@@ -251,12 +269,45 @@ class Licorne {
           gerbe(this.x + ux * 15, this.y + uy * 15, 8, ["#ffffff", "#ffd3ec"]);
         }
       }
+      // Le nez dans les nuages : ils la tournent doucement dans le sens de la route
+      if (Math.cos(this.angle) * ux + Math.sin(this.angle) * uy > 0.2) {
+        const ecart = angleEntre(Math.atan2(p.ty, p.tx) - this.angle);
+        const pas = 2.5 * duree;
+        this.angle = this.angle + Math.max(-pas, Math.min(pas, ecart));
+      }
     }
     let ds = p.s - circuit.trace[this.indice].s;
     if (ds > circuit.longueur / 2) ds = ds - circuit.longueur;
     if (ds < -circuit.longueur / 2) ds = ds + circuit.longueur;
     this.progres = this.progres + ds;
     this.indice = i;
+  }
+
+  // Le repêchage : une licorne qui n'avance plus est remise au milieu de la route, dans le bon sens
+  repecherSiBloquee(duree) {
+    if (this.fini || this.etourdie > 0) return;
+    if (this.progres > this.meilleurProgres + 40) {
+      this.meilleurProgres = this.progres;
+      this.bloquee = 0;
+      return;
+    }
+    this.bloquee = this.bloquee + duree;
+    if (this.bloquee < REPECHAGE) return;
+    const p = circuit.trace[this.indice];
+    gerbe(this.x, this.y, 12, ["#ffffff", "#ffd3ec"]);
+    this.x = p.x;
+    this.y = p.y;
+    this.angle = Math.atan2(p.ty, p.tx);
+    this.vx = 0;
+    this.vy = 0;
+    this.vitesse = 0;
+    this.bloquee = 0;
+    this.meilleurProgres = this.progres;
+    gerbe(this.x, this.y, 18, ["#ffe066", "#ffffff", "#c47dff"]);
+    if (this.humain) {
+      sonEtoile();
+      annoncer("Hop ! Un petit coup de magie", this.look.criniere[0], vueDe(this));
+    }
   }
 
   toucherLesObjets() {
@@ -286,7 +337,7 @@ class Licorne {
       if (this.attenteOrage > 0 || Math.hypot(this.x - orage.x, this.y - orage.y) > portee - 4) continue;
       this.attenteOrage = 1.5;
       if (this.geante > 0 || this.turbo > 0) continue;   // trop grande, ou trop rapide pour l'orage
-      this.etourdir(DUREE_ETOURDIE * (this.aidee() ? AIDE_MOBILE.etourdie : 1));
+      this.etourdir(DUREE_ETOURDIE * (this.aidee() ? aides().etourdie : 1));
       if (this.humain) sonOrage();
     }
   }

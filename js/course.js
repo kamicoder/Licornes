@@ -32,7 +32,14 @@ let choix = [
 if (choix[0] === choix[1]) choix[1] = (choix[0] + 1) % LICORNES.length;
 
 function annoncer(texte, couleur, vue) {
-  messages.push({ texte: texte, couleur: couleur, vie: 1.8, vue: vue === undefined ? null : vue });
+  const ou = vue === undefined ? null : vue;
+  // Le même message déjà affiché : on le prolonge au lieu de l'empiler
+  const pareil = messages.find(function (m) { return m.texte === texte && m.vue === ou; });
+  if (pareil) {
+    pareil.vie = 1.8;
+    return;
+  }
+  messages.push({ texte: texte, couleur: couleur, vie: 1.8, vue: ou });
 }
 
 function vueDe(licorne) {
@@ -78,7 +85,7 @@ function lancerCourse(config) {
   // Les rivales : la première est la plus forte
   const ecarts = [0.03, -0.02, -0.07];
   const rivales = config.rivales.map(function (numero, k) {
-    const niveau = (config.niveau + ecarts[k % ecarts.length]) * (modeTactile && !deux ? AIDE_MOBILE.rivales : 1);
+    const niveau = (config.niveau + ecarts[k % ecarts.length]) * aides().rivales;
     return new Licorne({ numero: numero, humain: false, niveau: niveau });
   });
   licornes = humains.concat(rivales);
